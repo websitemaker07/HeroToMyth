@@ -1,0 +1,294 @@
+<!doctype html>
+
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Personality Quiz — 12 Categories</title>
+  <style>
+    :root{--bg:#071022;--card:#061225;--accent:#06b6d4;--muted:#9fb8c6;--text:#e6eef6}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#041021 0%, #071022 100%);color:var(--text);display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:100%;max-width:980px}
+    header{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted)}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,input[type=text]{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+    button, .btn{background:var(--accent);border:none;color:#012;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .quizArea{margin-top:14px}
+    .questionBox{padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);min-height:100px;transition:transform .25s ease,opacity .25s ease}
+    .options{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .opt{padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.02);transition:transform .12s ease,box-shadow .12s ease}
+    .opt:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(2,6,23,0.6)}
+    .opt.selected{outline:2px solid rgba(6,182,212,0.22);background:rgba(6,182,212,0.06)}
+    .pager{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .result{margin-top:12px;padding:14px;border-radius:10px;background:rgba(0,0,0,0.25)}
+    .small{font-size:13px;color:var(--muted)}
+    @media(max-width:720px){.options{grid-template-columns:1fr}.controls{flex-direction:column;align-items:stretch}}
+    /* subtle animated confetti for win result */
+    .confetti{position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;opacity:0;transition:opacity .3s ease}
+    .confetti.show{opacity:1}
+    .dot{position:absolute;border-radius:50%;width:10px;height:10px;transform:translateY(-10px);animation:fall 1.6s linear forwards}
+    @keyframes fall{to{transform:translateY(110vh) rotate(200deg);opacity:0}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Personality Quiz — 12 Categories</h1>
+      <p class="lead">Hindi + English mix — Fun + Serious results. Har category ke 12 questions. Mobile friendly.</p>
+    </header><div class="card">
+  <div class="controls">
+    <label for="category">Category:</label>
+    <select id="category"></select>
+    <label for="name">Name (optional):</label>
+    <input id="name" type="text" placeholder="Aapka naam (optional)" />
+    <button id="startBtn" class="btn">Start Quiz</button>
+    <button id="fillSample" class="btn" style="background:#34d399;color:#012">Load Sample</button>
+  </div>
+
+  <div id="quizArea" class="quizArea" style="display:none">
+    <div id="progress" class="small">Q<span id="qnum">1</span>/12</div>
+    <div id="questionBox" class="questionBox"></div>
+    <div id="optionsBox" class="options"></div>
+
+    <div class="pager">
+      <div>
+        <button id="prevBtn" class="btn">Previous</button>
+        <button id="nextBtn" class="btn">Next</button>
+      </div>
+      <div>
+        <button id="finishBtn" class="btn">Finish</button>
+      </div>
+    </div>
+
+    <div id="result" class="result" style="display:none"></div>
+  </div>
+
+  <div id="startArea" style="margin-top:12px">
+    <p class="small">Tip: Questions prefilled. Agar aap chaho to questions ko code mein edit karke apne content se replace kar sakte ho.</p>
+  </div>
+</div>
+
+  </div>  <div id="confetti" class="confetti"></div>  <script>
+    // --- Categories ---
+    const categories = ['Hero','Personality','Animal','Historical Figure','Movie Character','Musician','Food','City','Career','Color','Superpower','Mythical Being'];
+
+    // Helper: create 12-question arrays for each category filled with curated Qs
+    const questionsData = {
+      'Hero':[
+        {id:1,text:'Jab mushkil aaye, aap ka pehla reaction kya hota hai?',options:[{id:'A',text:'Seedha action — chal padta hoon'},{id:'B',text:'Plan banaoonga — thoda sochunga'},{id:'C',text:'Logo ko sambhalunga — team ready karunga'},{id:'D',text:'Chup reh kar situation dekhunga'}]},
+        {id:2,text:'Aapka hero style?' ,options:[{id:'A',text:'Flashy, bold'},{id:'B',text:'Smart, tactical'},{id:'C',text:'Compassionate'},{id:'D',text:'Stealthy'}]},
+        {id:3,text:'Superpower choose karo:',options:[{id:'A',text:'Super strength'},{id:'B',text:'Super intelligence'},{id:'C',text:'Healing touch'},{id:'D',text:'Invisibility'}]},
+        {id:4,text:'Hero ki sabse badi quality aapko kya lagti hai?',options:[{id:'A',text:'Himmat'},{id:'B',text:'Soch samajh kar chalna'},{id:'C',text:'Daya'},{id:'D',text:'Sakht discipline'}]},
+        {id:5,text:'Villain se panga kaise lenge?',options:[{id:'A',text:'Mukabla face-to-face'},{id:'B',text:'Chalaki se plan banake'},{id:'C',text:'Logo ko bachake'},{id:'D',text:'Shadow tactics'}]},
+        {id:6,text:'Aapka signature move?',options:[{id:'A',text:'Power punch'},{id:'B',text:'Mind trick'},{id:'C',text:'Comfort & heal'},{id:'D',text:'Disappear & strike'}]},
+        {id:7,text:'Intro scene kaisa hoga?',options:[{id:'A',text:'Explosion + entry'},{id:'B',text:'Silent calculated entry'},{id:'C',text:'Helping someone on road'},{id:'D',text:'Dark alley, silhouette'}]},
+        {id:8,text:'Aap kis cheez ke liye hero banoge?',options:[{id:'A',text:'Power ka use'},{id:'B',text:'Justice'},{id:'C',text:'Love & care'},{id:'D',text:'Balance & protection'}]},
+        {id:9,text:'Weakness choose karo:',options:[{id:'A',text:'Overconfidence'},{id:'B',text:'Overthinking'},{id:'C',text:'Emotionally soft'},{id:'D',text:'Too secretive'}]},
+        {id:10,text:'Sidekick kaisa chahiye?',options:[{id:'A',text:'Strong fighter'},{id:'B',text:'Tech brain'},{id:'C',text:'Friendly companion'},{id:'D',text:'Loyal silent partner'}]},
+        {id:11,text:'Aapka hero outfit:',options:[{id:'A',text:'Bright & flashy'},{id:'B',text:'Functional & dark'},{id:'C',text:'Comfortable & warm'},{id:'D',text:'Simple & stealthy'}]},
+        {id:12,text:'Ending kaisi chahiye?',options:[{id:'A',text:'Grand victory'},{id:'B',text:'Sacrifice for greater good'},{id:'C',text:'Live quietly among people'},{id:'D',text:'Vanish into legend'}]}
+      ],
+
+      'Personality':[
+        {id:1,text:'Aap subah kaise start karte ho?',options:[{id:'A',text:'Workout / action'},{id:'B',text:'Plan banake'},{id:'C',text:'Meditation / calm'},{id:'D',text:'Slowly, aaram se'}]},
+        {id:2,text:'Group work mein aapka role?',options:[{id:'A',text:'Leader'},{id:'B',text:'Analyst'},{id:'C',text:'Supportive friend'},{id:'D',text:'Quiet doer'}]},
+        {id:3,text:'Conflict kaise handle karte ho?',options:[{id:'A',text:'Direct face kar ke'},{id:'B',text:'Soch samajh ke'},{id:'C',text:'Emotion se resolve'},{id:'D',text:'Avoid kar leta hoon'}]},
+        {id:4,text:'Aapka social style?',options:[{id:'A',text:'Bold & outgoing'},{id:'B',text:'Reserved & smart'},{id:'C',text:'Warm & friendly'},{id:'D',text:'Observant & calm'}]},
+        {id:5,text:'Decision lene ka approach?',options:[{id:'A',text:'Quick aur confident'},{id:'B',text:'Data & logic'},{id:'C',text:'Dil se'},{id:'D',text:'Wait & watch'}]},
+        {id:6,text:'Stress mein aap?',options:[{id:'A',text:'Fight mode'},{id:'B',text:'Plan fix'},{id:'C',text:'Talk to someone'},{id:'D',text:'Pull back'}]},
+        {id:7,text:'Dream job kaun si?',options:[{id:'A',text:'Entrepreneur'},{id:'B',text:'Researcher/engineer'},{id:'C',text:'Counsellor/teacher'},{id:'D',text:'Artist/solo creator'}]},
+        {id:8,text:'Friend aapse kya expect karega?',options:[{id:'A',text:'Courage'},{id:'B',text:'Advice'},{id:'C',text:'Support'},{id:'D',text:'Silence when needed'}]},
+        {id:9,text:'Aapki favourite weekend activity?',options:[{id:'A',text:'Adventure'},{id:'B',text:'Read & learn'},{id:'C',text:'Family time'},{id:'D',text:'Solo walk'}]},
+        {id:10,text:'Aapka learning style?',options:[{id:'A',text:'Hands-on'},{id:'B',text:'Theoretical'},{id:'C',text:'Group learning'},{id:'D',text:'Self-paced'}]},
+        {id:11,text:'Aap kis cheez se motivate hote ho?',options:[{id:'A',text:'Challenge'},{id:'B',text:'Curiosity'},{id:'C',text:'People'},{id:'D',text:'Inner peace'}]},
+        {id:12,text:'Agar aapko ek word bataana ho apne baare mein?',options:[{id:'A',text:'Bold'},{id:'B',text:'Smart'},{id:'C',text:'Kind'},{id:'D',text:'Calm'}]}
+      ],
+
+      'Animal':[
+        {id:1,text:'Aap kis animal se relate karte ho?',options:[{id:'A',text:'Lion - bold'},{id:'B',text:'Owl - wise'},{id:'C',text:'Dog - loyal'},{id:'D',text:'Cat - independent'}]},
+        {id:2,text:'Jungle mein aapka survival skill?',options:[{id:'A',text:'Fight'},{id:'B',text:'Hide & think'},{id:'C',text:'Social pack'},{id:'D',text:'Solo adapt'}]},
+        {id:3,text:'Comfortable habitat?',options:[{id:'A',text:'Open field'},{id:'B',text:'Forest canopy'},{id:'C',text:'Home with pack'},{id:'D',text:'Small cozy space'}]},
+        {id:4,text:'Aapka feeding style?',options:[{id:'A',text:'Hunt'},{id:'B',text:'Strategic catch'},{id:'C',text:'Share food'},{id:'D',text:'Forage quietly'}]},
+        {id:5,text:'Aapka energy level?',options:[{id:'A',text:'High'},{id:'B',text:'Night active'},{id:'C',text:'Playful'},{id:'D',text:'Relaxed'}]},
+        {id:6,text:'Pack leader kaise hoga?',options:[{id:'A',text:'Dominant'},{id:'B',text:'Wise guide'},{id:'C',text:'Caring'},{id:'D',text:'Observing leader'}]},
+        {id:7,text:'Young ones ke sath aap?',options:[{id:'A',text:'Protective'},{id:'B',text:'Teach them'},{id:'C',text:'Playful mentor'},{id:'D',text:'Let them explore'}]},
+        {id:8,text:'Danger aaye to?',options:[{id:'A',text:'Fight back'},{id:'B',text:'Escape & plan'},{id:'C',text:'Defend group'},{id:'D',text:'Hide silently'}]},
+        {id:9,text:'Aapka hunt approach?',options:[{id:'A',text:'Chase'},{id:'B',text:'Ambush'},{id:'C',text:'Team hunt'},{id:'D',text:'Solo strategy'}]},
+        {id:10,text:'Aap nature me kaisa feel karte?',options:[{id:'A',text:'Powerful'},{id:'B',text:'Connected'},{id:'C',text:'Belonging'},{id:'D',text:'Free'}]},
+        {id:11,text:'Aapko sabse zyada pasand kya hai?',options:[{id:'A',text:'Respect'},{id:'B',text:'Knowledge'},{id:'C',text:'Love'},{id:'D',text:'Freedom'}]},
+        {id:12,text:'Aapka survival motto?',options:[{id:'A',text:'Conquer'},{id:'B',text:'Adapt'},{id:'C',text:'Protect'},{id:'D',text:'Roam free'}]}
+      ],
+
+      'Historical Figure':[
+        {id:1,text:'History me aap kiska role samajhte ho?',options:[{id:'A',text:'Warrior leader'},{id:'B',text:'Thinker / philosopher'},{id:'C',text:'Social reformer'},{id:'D',text:'Mysterious influencer'}]},
+        {id:2,text:'Aapki leadership style?',options:[{id:'A',text:'Strong & decisive'},{id:'B',text:'Strategic & patient'},{id:'C',text:'People-first'},{id:'D',text:'Quiet power'}]},
+        {id:3,text:'Aap kis era me rehna chahenge?',options:[{id:'A',text:'Ancient battle times'},{id:'B',text:'Scientific renaissance'},{id:'C',text:'Social awakening'},{id:'D',text:'Myth & legend age'}]},
+        {id:4,text:'Aapki legacy kya hogi?',options:[{id:'A',text:'Empire / victory'},{id:'B',text:'Ideas & inventions'},{id:'C',text:'People welfare'},{id:'D',text:'Mystery & tales'}]},
+        {id:5,text:'Strategy vs Emotion?',options:[{id:'A',text:'Strategy'},{id:'B',text:'Strategy with wisdom'},{id:'C',text:'Emotion drives change'},{id:'D',text:'Blend but secretive'}]},
+        {id:6,text:'Public speech ka style?',options:[{id:'A',text:'Rousing & powerful'},{id:'B',text:'Logical & persuasive'},{id:'C',text:'Emotional & inspiring'},{id:'D',text:'Calm & enigmatic'}]},
+        {id:7,text:'Aap kis cheez ko badalna chahoge?',options:[{id:'A',text:'Borders & power'},{id:'B',text:'Ideas & education'},{id:'C',text:'Social rights'},{id:'D',text:'Beliefs & myths'}]},
+        {id:8,text:'Aapka main tool?',options:[{id:'A',text:'Army / force'},{id:'B',text:'Knowledge'},{id:'C',text:'People movement'},{id:'D',text:'Stories & symbols'}]},
+        {id:9,text:'Aapko history me kaun pasand?',options:[{id:'A',text:'Brave conquerors'},{id:'B',text:'Great scientists'},{id:'C',text:'Reformers'},{id:'D',text:'Legends'}]},
+        {id:10,text:'Aap crisis me kya karoge?',options:[{id:'A',text:'Lead front'},{id:'B',text:'Plan'},{id:'C',text:'Mobilize people'},{id:'D',text:'Use diplomacy'}]},
+        {id:11,text:'Aapke decisions?',options:[{id:'A',text:'Bold & instant'},{id:'B',text:'Measured'},{id:'C',text:'For public good'},{id:'D',text:'Cunning & subtle'}]},
+        {id:12,text:'History me aapko kaise yaad rakha jayega?',options:[{id:'A',text:'As a fearless leader'},{id:'B',text:'As great thinker'},{id:'C',text:'As people hero'},{id:'D',text:'As mysterious legend'}]}
+      ],
+
+      'Movie Character':[
+        {id:1,text:'Aap film me kaunsa role pasand karoge?',options:[{id:'A',text:'Action hero'},{id:'B',text:'Detective'},{id:'C',text:'Romantic lead'},{id:'D',text:'Anti-hero'}]},
+        {id:2,text:'Dialogues style?',options:[{id:'A',text:'Punchy & loud'},{id:'B',text:'Witty & sharp'},{id:'C',text:'Emotional'},{id:'D',text:'Cold & mysterious'}]},
+        {id:3,text:'Film ka climax kaisa ho?',options:[{id:'A',text:'Blockbuster fight'},{id:'B',text:'Twist reveal'},{id:'C',text:'Emotional reunion'},{id:'D',text:'Bittersweet'}]},
+        {id:4,text:'Screen presence?',options:[{id:'A',text:'Charismatic'},{id:'B',text:'Intense'},{id:'C',text:'Heart-touching'},{id:'D',text:'Brooding'}]},
+        {id:5,text:'Supporting role kaisa?' ,options:[{id:'A',text:'Sidekick fighter'},{id:'B',text:'Brains of team'},{id:'C',text:'Comic-relief'},{id:'D',text:'Dark helper'}]},
+        {id:6,text:'Aapki BGM kaisi hogi?',options:[{id:'A',text:'High tempo'},{id:'B',text:'Suspenseful'},{id:'C',text:'Melodic'},{id:'D',text:'Minimal & eerie'}]},
+        {id:7,text:'Director aapse kya expect karega?',options:[{id:'A',text:'Stunts'},{id:'B',text:'Subtle acting'},{id:'C',text:'Emotional depth'},{id:'D',text:'Ambiguity'}]},
+        {id:8,text:'Co-star kaise ho?',options:[{id:'A',text:'Beautiful ally'},{id:'B',text:'Intelligent side'},{id:'C',text:'Soulmate'},{id:'D',text:'Complex foil'}]},
+        {id:9,text:'Audience aapko kaise yaad rakhega?',options:[{id:'A',text:'Action sequences'},{id:'B',text:'Twist'},{id:'C',text:'Feelings'},{id:'D',text:'Mystery'}]},
+        {id:10,text:'Film genre?',options:[{id:'A',text:'Action'},{id:'B',text:'Thriller'},{id:'C',text:'Romance/Drama'},{id:'D',text:'Psychological'}]},
+        {id:11,text:'Movie poster kaisa?',options:[{id:'A',text:'Signature pose'},{id:'B',text:'Silhouette with clue'},{id:'C',text:'Soft portrait'},{id:'D',text:'Abstract art'}]},
+        {id:12,text:'Final line of your character?',options:[{id:'A',text:'"Main laut kar aaunga"'},{id:'B',text:'"Sach uthega"'},{id:'C',text:'"Sab theek ho jayega"'},{id:'D',text:'"Kuch rahasya hai"'}]}
+      ],
+
+      'Musician':[
+        {id:1,text:'Aapka music style kya hai?',options:[{id:'A',text:'High-energy'},{id:'B',text:'Complex melodies'},{id:'C',text:'Soulful'},{id:'D',text:'Ambient & experimental'}]},
+        {id:2,text:'Stage presence?',options:[{id:'A',text:'Loud & showy'},{id:'B',text:'Technical wizard'},{id:'C',text:'Emotional connect'},{id:'D',text:'Minimal mystery'}]},
+        {id:3,text:'Audience ko aap kya dena chahte?',options:[{id:'A',text:'Adrenaline'},{id:'B',text:'Aha moments'},{id:'C',text:'Comfort & tears'},{id:'D',text:'Thought-provoking'}]},
+        {id:4,text:'Aap gaane likhte ho ya perform karte ho?',options:[{id:'A',text:'Both'},{id:'B',text:'Mostly write'},{id:'C',text:'Mostly sing'},{id:'D',text:'Produce'}]},
+        {id:5,text:'Favorite instrument?',options:[{id:'A',text:'Guitar/Drums'},{id:'B',text:'Piano/Keys'},{id:'C',text:'Voice'},{id:'D',text:'Synths'}]},
+        {id:6,text:'Recording studio vibe?',options:[{id:'A',text:'Energetic & loud'},{id:'B',text:'Focused & quiet'},{id:'C',text:'Warm & cozy'},{id:'D',text:'Experimental lab'}]},
+        {id:7,text:'Collab with?',options:[{id:'A',text:'Big pop star'},{id:'B',text:'Critical-producer'},{id:'C',text:'Indie singer'},{id:'D',text:'Avant-garde artist'}]},
+        {id:8,text:'Song topic?',options:[{id:'A',text:'Party & fun'},{id:'B',text:'Stories & ideas'},{id:'C',text:'Love & pain'},{id:'D',text:'Abstract feelings'}]},
+        {id:9,text:'Tour life?',options:[{id:'A',text:'Yes, full tour'},{id:'B',text:'Selective shows'},{id:'C',text:'Small intimate gigs'},{id:'D',text:'Studio-only'}]},
+        {id:10,text:'Practice schedule?',options:[{id:'A',text:'Daily long sessions'},{id:'B',text:'Short focused'},{id:'C',text:'Emotional flow'},{id:'D',text:'On demand'}]},
+        {id:11,text:'Your fan message?',options:[{id:'A',text:'Let’s rock!'},{id:'B',text:'Dive deep'},{id:'C',text:'Thank you for feeling'},{id:'D',text:'Stay curious'}]},
+        {id:12,text:'How will you be remembered?',options:[{id:'A',text:'Stage legend'},{id:'B',text:'Musical genius'},{id:'C',text:'Touching souls'},{id:'D',text:'Pushing boundaries'}]}
+      ],
+
+      'Food':[], 'City':[], 'Career':[], 'Color':[], 'Superpower':[], 'Mythical Being':[]
+    };
+
+    // Fill remaining categories with balanced sample questions (to keep code shorter, programmatically generate varieties for some categories)
+    function genCategory(templateName,labels){
+      const arr=[];
+      for(let i=1;i<=12;i++){
+        arr.push({id:i,text:`${templateName} — Q${i}: Aap kya prefer karenge?`,options:[
+          {id:'A',text:labels[0]||'Option A'},{id:'B',text:labels[1]||'Option B'},{id:'C',text:labels[2]||'Option C'},{id:'D',text:labels[3]||'Option D'}
+        ]});
+      }
+      return arr;
+    }
+
+    if(!questionsData['Food']||questionsData['Food'].length<12) questionsData['Food']=genCategory('Food',['Street food','Gourmet','Comfort food','Healthy']);
+    if(!questionsData['City']||questionsData['City'].length<12) questionsData['City']=genCategory('City',['Big metro','Quiet town','Coastal city','Historic city']);
+    if(!questionsData['Career']||questionsData['Career'].length<12) questionsData['Career']=genCategory('Career',['Business','Research','Social work','Freelance']);
+    if(!questionsData['Color']||questionsData['Color'].length<12) questionsData['Color']=genCategory('Color',['Red - Bold','Blue - Calm','Green - Caring','Black - Mysterious']);
+    if(!questionsData['Superpower']||questionsData['Superpower'].length<12) questionsData['Superpower']=genCategory('Superpower',['Strength','Mind','Heal','Vanish']);
+    if(!questionsData['Mythical Being']||questionsData['Mythical Being'].length<12) questionsData['Mythical Being']=genCategory('Mythical',['Dragon','Sage','Phoenix','Shadow spirit']);
+
+    // Result mapping per category: map option frequency to a label + two-line result (funny + serious)
+    const mappings = {};
+    categories.forEach(cat=>{
+      mappings[cat] = {
+        'A':{title:`${cat} - Type A`,funny:`Aap ${cat} ke daredevil ho! (Masti se bhara)` ,serious:`Aap bold ho, action-oriented leader.`},
+        'B':{title:`${cat} - Type B`,funny:`Aap ${cat} ke dimaag ho! (Calculator on)` ,serious:`Aap analytical soch rakhte ho, strategy mein tez.`},
+        'C':{title:`${cat} - Type C`,funny:`Aap ${cat} ke dil wale ho! (Emotional hero)` ,serious:`Aap empathetic ho, logon ko support karne wale.`},
+        'D':{title:`${cat} - Type D`,funny:`Aap ${cat} ke raaz ho! (Silent mysterious)` ,serious:`Aap composed aur observant ho, quietly effective.`}
+      };
+    });
+
+    // Populate category select
+    const categorySelect = document.getElementById('category');
+    categories.forEach(c=>{const opt=document.createElement('option');opt.value=c;opt.textContent=c;categorySelect.appendChild(opt)});
+
+    // DOM refs
+    const startBtn = document.getElementById('startBtn');
+    const fillSample = document.getElementById('fillSample');
+    const quizArea = document.getElementById('quizArea');
+    const questionBox = document.getElementById('questionBox');
+    const optionsBox = document.getElementById('optionsBox');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const resultBox = document.getElementById('result');
+    const qnum = document.getElementById('qnum');
+    const confetti = document.getElementById('confetti');
+
+    let state = {cat:null,index:0,answers:[]};
+
+    function startQuiz(){
+      state.cat = categorySelect.value;
+      state.index = 0;
+      state.answers = Array(12).fill(null);
+      document.getElementById('startArea').style.display='none';
+      quizArea.style.display='block';
+      resultBox.style.display='none';
+      renderQuestion();
+    }
+
+    function renderQuestion(){
+      const q = questionsData[state.cat][state.index];
+      qnum.textContent = state.index+1;
+      // show with small animation
+      questionBox.style.opacity=0; setTimeout(()=>{ questionBox.style.opacity=1; questionBox.innerHTML = `<strong>Q${state.index+1}.</strong> ${escapeHtml(q.text)}`; },120);
+      optionsBox.innerHTML='';
+      q.options.forEach((opt,idx)=>{
+        const d=document.createElement('div'); d.className='opt'; d.tabIndex=0; d.dataset.value=opt.id; d.innerHTML=`<strong>${opt.id}.</strong> ${escapeHtml(opt.text)}`;
+        if(state.answers[state.index]===opt.id) d.classList.add('selected');
+        d.addEventListener('click', ()=>{ state.answers[state.index]=opt.id; [...optionsBox.children].forEach(ch=>ch.classList.remove('selected')); d.classList.add('selected'); });
+        optionsBox.appendChild(d);
+      });
+    }
+
+    prevBtn.addEventListener('click', ()=>{ if(state.index>0){ state.index--; renderQuestion(); } });
+    nextBtn.addEventListener('click', ()=>{ if(state.index<11){ state.index++; renderQuestion(); } });
+
+    finishBtn.addEventListener('click', ()=>{
+      const unanswered = state.answers.some(a=>a===null);
+      if(unanswered){ if(!confirm('Kuch answers chhute hain. Fir bhi submit karein?')) return; }
+      showResult();
+    });
+
+    startBtn.addEventListener('click', startQuiz);
+    fillSample.addEventListener('click', ()=>{ alert('Sample questions already loaded. Choose category and Start.'); });
+
+    document.addEventListener('keydown',(e)=>{ if(quizArea.style.display==='block'){ if(e.key==='ArrowRight') nextBtn.click(); if(e.key==='ArrowLeft') prevBtn.click(); if(['1','2','3','4'].includes(e.key)){ const idx=parseInt(e.key)-1; const q=questionsData[state.cat][state.index]; if(q){ state.answers[state.index]=q.options[idx].id; renderQuestion(); const child=optionsBox.children[idx]; if(child) child.classList.add('selected'); } } } });
+
+    function showResult(){
+      // count A/B/C/D
+      const counts={A:0,B:0,C:0,D:0}; state.answers.forEach(a=>{ if(a && counts[a]!==undefined) counts[a]++; });
+      // find top
+      const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+      const top=sorted[0][0];
+      const map = mappings[state.cat][top];
+      // display
+      const name = document.getElementById('name').value || '';
+      resultBox.style.display='block';
+      resultBox.innerHTML = `<h3>${escapeHtml(map.title)} ${name?(' — '+escapeHtml(name)) : ''}</h3>
+        <p><strong>Funny:</strong> ${escapeHtml(map.funny)}</p>
+        <p><strong>Serious:</strong> ${escapeHtml(map.serious)}</p>
+        <p class="small">Distribution: A=${counts.A}, B=${counts.B}, C=${counts.C}, D=${counts.D}</p>
+        <p style="margin-top:8px"><button class="btn" onclick="restart()">Restart</button></p>`;
+      // show confetti if top is A or C (celebration)
+      if(top==='A' || top==='C') playConfetti(); else hideConfetti();
+      window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+    }
+
+    function restart(){ document.getElementById('startArea').style.display='block'; quizArea.style.display='none'; resultBox.style.display='none'; hideConfetti(); }
+
+    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Confetti simple generator
+    function playConfetti(){ confetti.classList.add('show'); confetti.innerHTML=''; for(let i=0;i<30;i++){ const d=document.createElement('div'); d.className='dot'; d.style.left=Math.random()*100+'%'; d.style.background=['#f97316','#06b6d4','#34d399','#f43f5e'][i%4]; d.style.animationDelay=(Math.random()*0.3)+'s'; d.style.width = (6+Math.random()*10)+'px'; d.style.height=d.style.width; confetti.appendChild(d); } setTimeout(()=>{ confetti.classList.remove('show'); confetti.innerHTML=''; },1600); }
+    function hideConfetti(){ confetti.classList.remove('show'); confetti.innerHTML=''; }
+
+    // initial UI state
+    document.getElementById('startArea').style.display='block';
+
+    // Console deploy note
+    console.log('Ready: Push this HTML file to a GitHub repo and enable GitHub Pages (branch: main or gh-pages).');
+  </script></body>
+</html>
